@@ -43,7 +43,7 @@ begin
   end;
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  TStyleManager.TrySetStyle('Amakrits');
+  TStyleManager.TrySetStyle('Aqua Graphite');
   Application.CreateForm(TFrmMain, FrmMain);
   FrmMain.Init;
   Application.Run;
