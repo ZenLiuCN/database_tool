@@ -1,0 +1,6 @@
+__recovery/
+Win64/
+__history/
+*.identcache
+*.delphilsp.json
+*.local
