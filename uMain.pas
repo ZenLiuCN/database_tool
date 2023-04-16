@@ -27,21 +27,22 @@ type
     PnlMain: TPanel;
     EdtStore: TLabeledEdit;
     PnlAct: TPanel;
-    btnOpen: TButton;
+    BtnOpen: TButton;
     DlgOpen: TOpenDialog;
     Tray: TTrayIcon;
     AppEvents: TApplicationEvents;
     Log: TMemo;
     Tmr: TTimer;
-    btnStart: TButton;
-    btnStop: TButton;
-    btnBackup: TButton;
-    btnRestore: TButton;
-    btnReload: TButton;
+    BtnStart: TButton;
+    BtnStop: TButton;
+    BtnBackup: TButton;
+    BtnRestore: TButton;
+    BtnReload: TButton;
     DlgSave: TSaveDialog;
     PnlBtns: TPanel;
     PnlClient: TPanel;
     btnClear: TButton;
+    LblStat: TLabel;
 
     procedure TrayDblClick(Sender: TObject);
     procedure AppEventsMinimize(Sender: TObject);
@@ -52,7 +53,7 @@ type
     procedure btnClearClick(Sender: TObject);
   private
     { Private declarations }
-    Running: bool;
+    Running: BOOL;
     Proc: uExec.TAsyncReader;
     procedure Reload(Sender: TObject);
     procedure Start(Sender: TObject);
@@ -60,21 +61,21 @@ type
     procedure Backup(Sender: TObject);
     procedure Restore(Sender: TObject);
 
-    procedure Logging(Msg: string);
-    procedure LogOut(Msg: string);
-    procedure LogTab(Msg: string);
-    procedure Dbg(Msg: string);
+    procedure Logging(MSG: string);
+    procedure LogOut(MSG: string);
+    procedure LogTab(MSG: string);
+    procedure Dbg(MSG: string);
 
-    procedure Alert(Msg: string);
+    procedure Alert(MSG: string);
     procedure Prepare;
     procedure InitDatabase;
-    function CloseServer(): bool;
+    function CloseServer(): BOOL;
     procedure StartServer();
     procedure capNotify(pre: string);
     function Arc(folder, archive: string): Cardinal;
     function Unarc(archive, folder: string): Cardinal;
-    function doBackup(output: string): Cardinal;
-    function doRestore(input: string): Cardinal;
+    function doBackup(Output: string): Cardinal;
+    function doRestore(Input: string): Cardinal;
     procedure doArcRestore;
     procedure doFileRestore;
     procedure doFolderRestore;
@@ -105,25 +106,25 @@ procedure TFrmMain.ModeRunning;
 begin
   Tmr.Interval := conf.ProcInterval;
   Tmr.Enabled := True;
-  btnBackup.Enabled := (conf.CmdBackupol <> '');
-  btnRestore.Enabled := (conf.CmdRestoreOl <> '');
-  btnStart.Enabled := false;
-  btnStop.Enabled := True;
-  btnReload.Enabled := false;
-  btnOpen.Enabled := false;
-  Tab.Enabled := false;
+  BtnBackup.Enabled := (conf.CmdBackupol <> '');
+  BtnRestore.Enabled := (conf.CmdRestoreOl <> '');
+  BtnStart.Enabled := False;
+  BtnStop.Enabled := True;
+  BtnReload.Enabled := False;
+  BtnOpen.Enabled := False;
+  Tab.Enabled := False;
 end;
 
 procedure TFrmMain.ModeDefault;
 begin
-  btnBackup.Enabled := (conf.CmdBackup <> '');
-  btnRestore.Enabled := (conf.CmdRestore <> '');
-  btnStart.Enabled := True;
-  btnStop.Enabled := false;
-  btnReload.Enabled := True;
-  btnOpen.Enabled := True;
+  BtnBackup.Enabled := (conf.CmdBackup <> '');
+  BtnRestore.Enabled := (conf.CmdRestore <> '');
+  BtnStart.Enabled := True;
+  BtnStop.Enabled := False;
+  BtnReload.Enabled := True;
+  BtnOpen.Enabled := True;
   Tab.Enabled := True;
-  capNotify('');
+  capNotify('(○)');
 end;
 
 { 压缩文件夹 }
@@ -151,7 +152,7 @@ end;
 { 解压文件夹 }
 function TFrmMain.Unarc(archive, folder: string): Cardinal;
 begin
-  Result := 0;
+  Result := 65535;
   var Cmd: string;
   if conf.CmdUnArchive <> '' then
     Cmd := conf.CmdUnArchive;
@@ -167,16 +168,20 @@ end;
 { 备份 }
 function TFrmMain.doBackup(output: string): Cardinal;
 begin
-  Result := 0;
-  var Cmd: string;
-  if conf.CmdBackupol <> '' then
+  Result := 65535;
+  var Cmd := '';
+  var run := Proc <> nil;
+  if (conf.CmdBackupol <> '') and run then
     Cmd := conf.CmdBackupol
-  else
+  else if (conf.CmdBackup <> '') and (not run) then
     Cmd := conf.CmdBackup;
   if Cmd = '' then
     Exit
   else begin
-    Cmd := Format(Cmd, [output]);
+    if Cmd.Contains('%1:s') then
+      Cmd := Format(Cmd, [output, EdtStore.Text])
+    else
+      Cmd := Format(Cmd, [output]);
     Dbg(conf.BackupStart + ' ' + Cmd);
     Result := uExec.SyncOutput(Cmd, '', LogOut);
   end;
@@ -185,16 +190,20 @@ end;
 { 还原 }
 function TFrmMain.doRestore(input: string): Cardinal;
 begin
-  Result := 0;
-  var Cmd: string;
-  if conf.CmdRestoreOl <> '' then
+  Result := 65535;
+  var Cmd := '';
+  var run := Proc <> nil;
+  if (conf.CmdRestoreOl <> '') and (run) then
     Cmd := conf.CmdRestoreOl
-  else
+  else if (conf.CmdRestore <> '') and (not run) then
     Cmd := conf.CmdRestore;
   if Cmd = '' then
     Exit
   else begin
-    Cmd := Format(Cmd, [input]);
+    if Cmd.Contains('%1:s') then
+      Cmd := Format(Cmd, [input, EdtStore.Text])
+    else
+      Cmd := Format(Cmd, [input]);
     Dbg(conf.RestoreStart + ' ' + Cmd);
     Result := uExec.SyncOutput(Cmd, '', LogOut);
   end;
@@ -203,17 +212,27 @@ end;
 { 标签提示 }
 procedure TFrmMain.capNotify(pre: string);
 begin
-  if not string(EdtStore.EditLabel.Caption).Contains('>') then
-    EdtStore.EditLabel.Caption := '>' + EdtStore.EditLabel.Caption;
-  EdtStore.EditLabel.Caption := pre + string(EdtStore.EditLabel.Caption).Split(['>'])[1];
+  if pre = '*' then begin
+    if LblStat.Caption = '(—)' then
+      LblStat.Caption := '(／)'
+    else if LblStat.Caption = '(／)' then
+      LblStat.Caption := '(｜)'
+    else if LblStat.Caption = '(｜)' then
+      LblStat.Caption := '(＼)'
+    else
+      LblStat.Caption := '(—)';
+    Exit;
+  end;
+  LblStat.Caption := pre;
 end;
 
 { 停止服务 }
-function TFrmMain.CloseServer: bool;
+function TFrmMain.CloseServer: BOOL;
 begin
-  Result := false;
+  Result := False;
   if Proc = nil then
     Exit;
+  LogTab(conf.ServiceStop);
   if conf.CmdStop <> '' then begin
     var Cmd := conf.CmdStop;
     if Cmd.Contains('%0:s') then
@@ -222,14 +241,13 @@ begin
     Logging(conf.ServiceWaitClose);
     var extCode := uExec.SyncOutput(Cmd, '', LogOut);
     Result := extCode = 0;
-
   end;
-  Tmr.Enabled := false;
+  Tmr.Enabled := False;
   Proc.Terminate;
   Proc := nil;
   if conf.CmdStop = '' then
     Result := True;
-  if not btnStart.Enabled then
+  if not BtnStart.Enabled then
     OnServiceTerminate(nil);
 end;
 
@@ -283,7 +301,7 @@ begin
     procedure
     begin
       ModeRunning;
-      capNotify('?>');
+      capNotify('(?)');
       LogTab(conf.ServiceStarted);
     end, OnServiceTerminate);
 end;
@@ -328,25 +346,25 @@ begin
   Tab.Tabs.AddStrings(conf.Tabs);
   EdtStore.EditLabel.Caption := conf.LblStore;
 
-  btnOpen.Caption := conf.btnOpen;
+  BtnOpen.Caption := conf.btnOpen;
 
-  btnStart.Caption := conf.btnStart;
-  btnStop.Caption := conf.btnStop;
-  btnBackup.Caption := conf.btnBackup;
-  btnRestore.Caption := conf.btnRestore;
-  btnReload.Caption := conf.btnReload;
+  BtnStart.Caption := conf.btnStart;
+  BtnStop.Caption := conf.btnStop;
+  BtnBackup.Caption := conf.btnBackup;
+  BtnRestore.Caption := conf.btnRestore;
+  BtnReload.Caption := conf.btnReload;
 
-  btnStart.Hint := conf.HintStart;
-  btnStop.Hint := conf.HintStop;
-  btnBackup.Hint := conf.HintBackup;
-  btnRestore.Hint := conf.HintRestore;
-  btnReload.Hint := conf.HintReload;
-
-  btnStart.OnClick := Start;
-  btnStop.OnClick := Stop;
-  btnBackup.OnClick := Backup;
-  btnRestore.OnClick := Restore;
-  btnReload.OnClick := Reload;
+  BtnStart.Hint := conf.HintStart;
+  BtnStop.Hint := conf.HintStop;
+  BtnBackup.Hint := conf.HintBackup;
+  BtnRestore.Hint := conf.HintRestore;
+  BtnReload.Hint := conf.HintReload;
+  btnClear.Hint := conf.HintClear;
+  BtnStart.OnClick := Start;
+  BtnStop.OnClick := Stop;
+  BtnBackup.OnClick := Backup;
+  BtnRestore.OnClick := Restore;
+  BtnReload.OnClick := Reload;
   Prepare;
 
 end;
@@ -361,7 +379,7 @@ begin
   if not ((ol and run) or (not ol and not run)) then begin
     Exit;
   end;
-  if conf.CmdArchive <> '' then
+  if (conf.CmdArchive <> '') and (conf.ArcExt <> '') then
     doArcBackup
   else if conf.BackupExt <> '' then
     doFileBackup
@@ -373,13 +391,17 @@ procedure TFrmMain.doArcBackup;
 begin
   var a7 := '';
   DlgSave.Title := conf.DlgOpenBackup;
-  DlgSave.Filter := '7zip|*.7z';
+  DlgSave.Filter := conf.ArcExt;
   if not DlgSave.Execute(Handle) then
     Exit;
   a7 := DlgSave.FileName;
-  var folder := TPath.Combine(TPath.GetTempPath, TPath.GetRandomFileName.Replace('.', ''));
-  // temp folder
-  TDirectory.CreateDirectory(folder);
+  var folder: string;
+  if conf.BackupExt <> '' then
+    folder := TPath.GetTempFileName
+  else begin
+    folder := TPath.Combine(TPath.GetTempPath, TPath.GetRandomFileName.Replace('.', ''));
+    TDirectory.CreateDirectory(folder);
+  end;
   Logging(Format(conf.BackupStart + '  %s', [folder]));
   var code := doBackup(folder);
   if code <> 0 then begin
@@ -434,7 +456,7 @@ begin
   var run := not (Proc = nil);
   if not ((ol and run) or (not ol and not run)) then
     Exit;
-  if conf.CmdUnArchive <> '' then
+  if (conf.CmdUnArchive <> '') and (conf.ArcExt <> '') then
     doArcRestore
   else if conf.BackupExt <> '' then
     doFileRestore
@@ -446,13 +468,19 @@ procedure TFrmMain.doArcRestore;
 begin
   var a7 := '';
   DlgOpen.Title := conf.DlgOpenRestore;
-  DlgOpen.Filter := '7zip|*.7z';
+  DlgOpen.Filter := conf.ArcExt;
   if not DlgOpen.Execute(Handle) then
     Exit;
   a7 := DlgOpen.FileName;
-  var folder := TPath.Combine(TPath.GetTempPath, TPath.GetRandomFileName.Replace('.', ''));
-  // temp folder
-  TDirectory.CreateDirectory(folder);
+  var folder: string;
+  if conf.BackupExt <> '' then
+    folder := TPath.GetTempFileName
+  else begin
+    folder := TPath.Combine(TPath.GetTempPath, TPath.GetRandomFileName.Replace('.', ''));
+    // temp folder
+    TDirectory.CreateDirectory(folder);
+  end;
+
   Dbg(Format(conf.UnarchiveStart + '  %s =>', [a7, folder]));
   var code := Unarc(a7, folder);
   if code <> 0 then begin
@@ -513,7 +541,7 @@ begin
   if SelectDirectory(conf.DlgOpenData, '', path, [sdNewFolder, sdShowEdit, sdShowShares, sdNewUI, sdValidateDir]) then begin
     EdtStore.Text := path;
   end;
-  btnStart.Enabled := EdtStore.Text <> '';
+  BtnStart.Enabled := EdtStore.Text <> '';
 end;
 
 { 数据库类型切换 }
@@ -550,16 +578,16 @@ end;
 procedure TFrmMain.TmrTimer(Sender: TObject);
 begin
   if ProcessCount(conf.ProcExec) > 0 then
-    capNotify('*>')
+    capNotify('*')
   else begin
-    capNotify('!>');
+    capNotify('(!)');
     LogTab(conf.ErrServiceQuit);
-    Tmr.Enabled := false;
+    Tmr.Enabled := False;
     Proc.Terminate;
     Proc := nil;
-    Tray.BalloonHint:=conf.ErrServiceQuit;
+    Tray.BalloonHint := conf.ErrServiceQuit;
     Tray.ShowBalloonHint;
-    Tray.BalloonHint:=conf.HintTray;
+    Tray.BalloonHint := conf.HintTray;
     ModeDefault;
   end;
 end;
@@ -572,18 +600,18 @@ begin
     EdtStore.Text := conf.ParamDb
   else
     EdtStore.Text := '';
-  btnStart.Enabled := EdtStore.Text <> '';
-  btnBackup.Enabled := (conf.CmdBackup <> '') and btnStart.Enabled;
-  btnRestore.Enabled := (conf.CmdRestore <> '') and btnStart.Enabled;
-  btnOpen.Enabled := True;
-  btnStop.Enabled := false;
-  btnReload.Enabled := True;
+  BtnStart.Enabled := EdtStore.Text <> '';
+  BtnBackup.Enabled := (conf.CmdBackup <> '') and BtnStart.Enabled;
+  BtnRestore.Enabled := (conf.CmdRestore <> '') and BtnStart.Enabled;
+  BtnOpen.Enabled := True;
+  BtnStop.Enabled := False;
+  BtnReload.Enabled := True;
 end;
 
 { 托盘还原 }
 procedure TFrmMain.TrayDblClick(Sender: TObject);
 begin
-  Tray.Visible := false;
+  Tray.Visible := False;
   Show;
   WindowState := wsNormal;
   Application.BringToFront();

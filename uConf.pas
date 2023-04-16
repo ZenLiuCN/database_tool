@@ -17,7 +17,7 @@ type
     Inf: TIniFile;
     Root: string; { exe root }
     { conf }
-    Debug: bool;
+    Debug: BOOL;
     ProcInterval: Integer;
 
     Title: string; { window title }
@@ -46,6 +46,7 @@ type
     HintBackup: string;
     HintRestore: string;
     HintReload: string;
+    HintClear: string;
     HintTray: string;
     MsgBoxErr: string;
     { errors }
@@ -101,6 +102,7 @@ type
     CmdArchive: string;
     CmdUnArchive: string;
     BackupExt: string;
+    ArcExt: string;
   private
   public
     function Fix(Section, Name, Def: string): string;
@@ -115,7 +117,6 @@ var
 implementation
 
 uses
-
   System.DateUtils,
   System.IOUtils;
 
@@ -128,28 +129,25 @@ begin
 end;
 
 procedure TConf.Init();
-
 begin
   Root := ExtractFilePath(Application.ExeName);
   Title := '数据库工具';
   Tabs := TStringList.Create;
-  var
-  ini := ChangeFileExt(Application.ExeName, '.ini');
-  if System.SysUtils.FileExists(ini) then
-  begin
+  var ini := ChangeFileExt(Application.ExeName, '.ini');
+  if System.SysUtils.FileExists(ini) then begin
     Inf := TIniFile.Create(ini); // create inf
 
-    Debug := Inf.ReadBool('conf', 'debug', false);
+    Debug := Inf.ReadBool('conf', 'debug', False);
     ProcInterval := Inf.ReadInteger('conf', 'proc_interval', 1000);
 
     Title := Inf.ReadString('lang', 'win_title', '数据库工具');
-    LblStore := Inf.ReadString('lang', 'lbl_store', '数据库');
-    BtnOpen := Inf.ReadString('lang', 'btn_open', '打开');
-    BtnStart := Inf.ReadString('lang', 'btn_start', '启');
-    BtnStop := Inf.ReadString('lang', 'btn_stop', '停');
-    BtnBackup := Inf.ReadString('lang', 'btn_backup', '备');
-    BtnRestore := Inf.ReadString('lang', 'btn_restore', '还');
-    BtnReload := Inf.ReadString('lang', 'btn_reload', '载');
+    LblStore := Inf.ReadString('lang', 'lbl_store', '数据目录');
+    BtnOpen := Inf.ReadString('lang', 'btn_open', '选择');
+    BtnStart := Inf.ReadString('lang', 'btn_start', '启动');
+    BtnStop := Inf.ReadString('lang', 'btn_stop', '停止');
+    BtnBackup := Inf.ReadString('lang', 'btn_backup', '备份');
+    BtnRestore := Inf.ReadString('lang', 'btn_restore', '还原');
+    BtnReload := Inf.ReadString('lang', 'btn_reload', '重载');
 
     DlgOpenData := Inf.ReadString('lang', 'dlg_open_data', '选择数据库文件夹');
     DlgOpenBackup := Inf.ReadString('lang', 'dlg_open_backup', '保存备份数据');
@@ -161,6 +159,7 @@ begin
     HintBackup := Inf.ReadString('lang', 'hint_backup', '备份数据库');
     HintRestore := Inf.ReadString('lang', 'hint_restore', '还原数据库');
     HintReload := Inf.ReadString('lang', 'hint_reload', '重加载配置');
+    HintClear := Inf.ReadString('lang', 'hint_clear', '清空日志');
     HintTray := Inf.ReadString('lang', 'hint_tray', '双击显示窗口');
     MsgBoxErr := Inf.ReadString('lang', 'msgbox_err', '错误');
 
@@ -205,10 +204,8 @@ begin
     Tabs.Delete(Tabs.IndexOf('conf'));
     Tabs.Delete(Tabs.IndexOf('lang'));
   end
-  else
-  begin
-    MessageBox(0, PChar(Format('配置文件不存在:%s' + #13#10 +
-      ' Config File not found: %s', [ini, ini])), 'ERROR', MB_OK);
+  else begin
+    MessageBox(0, PChar(Format('配置文件不存在:%s' + #13#10 + ' Config File not found: %s', [ini, ini])), 'ERROR', MB_OK);
     Application.Terminate;
   end;
 
@@ -218,6 +215,7 @@ procedure TConf.Load(sec: string);
 begin
   ParamDb := Fix(sec, 'param_db', '');
   BackupExt := Inf.ReadString(sec, 'backup_ext', '');
+  ArcExt := Inf.ReadString(sec, 'arc_ext', '');
   ProcExec := Inf.ReadString(sec, 'proc_exec', '');
   CmdLaunch := Fix(sec, 'cmd_launch', '');
   CmdInit := Fix(sec, 'cmd_init', '');
@@ -231,13 +229,13 @@ begin
 end;
 
 initialization
+  conf := TConf.Create;
+  conf.Init();
 
-conf := TConf.Create;
-conf.Init();
 
 finalization
-
-conf.Inf.Destroy;
-conf.Destroy;
+  conf.Inf.Destroy;
+  conf.Destroy;
 
 end.
+

@@ -4,8 +4,8 @@ object FrmMain: TFrmMain
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
   Caption = 'FrmMain'
-  ClientHeight = 413
-  ClientWidth = 658
+  ClientHeight = 410
+  ClientWidth = 641
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,22 +18,31 @@ object FrmMain: TFrmMain
   object PnlMain: TPanel
     Left = 0
     Top = 0
-    Width = 658
-    Height = 413
+    Width = 641
+    Height = 410
     Align = alClient
     TabOrder = 0
+    ExplicitWidth = 637
+    ExplicitHeight = 402
     object PnlAct: TPanel
       Left = 1
       Top = 1
-      Width = 656
+      Width = 639
       Height = 32
       Align = alTop
       TabOrder = 0
-      ExplicitWidth = 652
+      ExplicitWidth = 635
+      object LblStat: TLabel
+        Left = 8
+        Top = 3
+        Width = 18
+        Height = 15
+        Caption = '('#9675')'
+      end
       object EdtStore: TLabeledEdit
-        Left = 72
+        Left = 88
         Top = 0
-        Width = 502
+        Width = 469
         Height = 23
         Align = alCustom
         Anchors = [akTop, akRight, akBottom]
@@ -43,10 +52,10 @@ object FrmMain: TFrmMain
         LabelPosition = lpLeft
         TabOrder = 0
         Text = ''
-        ExplicitLeft = 68
+        ExplicitLeft = 84
       end
       object btnOpen: TButton
-        Left = 580
+        Left = 563
         Top = 1
         Width = 75
         Height = 30
@@ -56,18 +65,18 @@ object FrmMain: TFrmMain
         ShowHint = True
         TabOrder = 1
         OnClick = btnOpenClick
-        ExplicitLeft = 576
+        ExplicitLeft = 559
       end
     end
     object PnlBtns: TPanel
-      Left = 581
+      Left = 564
       Top = 33
       Width = 76
-      Height = 379
+      Height = 376
       Align = alRight
       TabOrder = 1
-      ExplicitLeft = 577
-      ExplicitHeight = 371
+      ExplicitLeft = 560
+      ExplicitHeight = 368
       object btnBackup: TButton
         Left = 1
         Top = 151
@@ -127,46 +136,52 @@ object FrmMain: TFrmMain
     object PnlClient: TPanel
       Left = 1
       Top = 33
-      Width = 580
-      Height = 379
+      Width = 563
+      Height = 376
       Align = alClient
       TabOrder = 2
+      ExplicitWidth = 559
+      ExplicitHeight = 368
       DesignSize = (
-        580
-        379)
+        563
+        376)
       object Tab: TTabControl
         Left = 1
-        Top = 356
-        Width = 578
+        Top = 353
+        Width = 561
         Height = 22
         Align = alBottom
         TabOrder = 0
         TabPosition = tpBottom
         OnChange = TabChange
-        ExplicitTop = 348
-        ExplicitWidth = 574
+        ExplicitTop = 345
+        ExplicitWidth = 557
       end
       object Log: TMemo
         Left = 1
         Top = 1
-        Width = 578
-        Height = 355
+        Width = 561
+        Height = 352
         Align = alClient
         ReadOnly = True
         ScrollBars = ssVertical
         TabOrder = 1
-        ExplicitWidth = 574
-        ExplicitHeight = 347
+        ExplicitWidth = 557
+        ExplicitHeight = 344
       end
       object btnClear: TButton
-        Left = 552
-        Top = 354
+        Left = 535
+        Top = 351
         Width = 28
         Height = 25
         Anchors = [akRight, akBottom]
         Caption = #9679
+        ParentShowHint = False
+        ShowHint = True
         TabOrder = 2
         OnClick = btnClearClick
+        ExplicitLeft = 531
+        ExplicitTop = 343
       end
     end
   end
